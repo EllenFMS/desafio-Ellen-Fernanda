@@ -1,156 +1,336 @@
-# Treinamento de CRUD — CITi
+# 🌱 Folhagem & Cia — API de Gerenciamento de Plantas
 
-API de exemplo com um **CRUD de usuários** para o treinamento de back-end dos aspirantes.
+API REST desenvolvida como parte do desafio de Back-end do Processo Seletivo do CITi, utilizando Node.js, Express, TypeScript, Prisma e PostgreSQL.
 
-**Stack:** Node.js · Express · TypeScript · Prisma · PostgreSQL · Docker
+O projeto parte de um CRUD de usuários já existente no repositório de treinamento e tem como objetivo desenvolver uma API para gerenciamento de uma loja de plantas, contemplando cadastro, consulta, atualização, remoção e controle de estoque.
 
-> **CRUD** = **C**reate, **R**ead, **U**pdate e **D**elete: as quatro operações básicas de qualquer cadastro (criar, listar/buscar, editar e remover).
+## 🛠️ Tecnologias utilizadas
 
-| Arquivo | O que tem |
-|---|---|
-| `README.md` (este) | Como rodar o projeto e como o CRUD de usuários funciona |
-| [`DESAFIO.md`](DESAFIO.md) | O enunciado do desafio Folhagem & Cia: o que construir e entregar |
+* **Node.js** — Ambiente de execução.
+* **Express** — Framework para construção da API.
+* **TypeScript** — Tipagem estática.
+* **Prisma ORM** — Comunicação com o banco de dados.
+* **PostgreSQL** — Banco de dados relacional.
+* **Docker** — Containerização da aplicação e do banco.
 
----
+## 📋 Funcionalidades
 
-## ✅ Pré-requisitos
+A API contempla as seguintes operações:
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/): roda a API e o banco em containers. **Deixe ele aberto** sempre que for rodar o projeto.
-- [Node.js 20+](https://nodejs.org): para rodar os comandos `yarn` na sua máquina.
-- Yarn: `npm install -g yarn`
-- Um cliente HTTP para testar as rotas: [Thunder Client](https://www.thunderclient.com/) (extensão do VS Code), Insomnia ou Postman.
+* Cadastro de plantas.
+* Listagem de plantas.
+* Busca de uma planta pelo ID.
+* Atualização parcial dos dados de uma planta.
+* Exclusão de plantas.
+* Filtragem por luminosidade e compatibilidade com animais.
+* Controle de estoque e registro de vendas.
+* Cálculo do valor total do estoque.
 
----
+### 🌿 Entidade Planta
 
-## ⚙️ Como rodar
+| Campo           | Tipo     | Descrição                                        |
+| --------------- | -------- | ------------------------------------------------ |
+| `id`            | Int      | Identificador gerado automaticamente pelo banco. |
+| `nome`          | String   | Nome popular da planta.                          |
+| `especie`       | String   | Nome científico da planta.                       |
+| `preco`         | Int      | Preço em centavos.                               |
+| `estoque`       | Int      | Quantidade disponível em estoque.                |
+| `luminosidade`  | Enum     | Necessidade de luminosidade.                     |
+| `petFriendly`   | Boolean  | Indica se a planta é segura para animais.        |
+| `regaACadaDias` | Int      | Intervalo de rega em dias.                       |
+| `createdAt`     | DateTime | Data de criação do registro.                     |
+| `updatedAt`     | DateTime | Data da última atualização.                      |
 
-Com o Docker Desktop aberto, rode na raiz do projeto:
+**Valores aceitos para luminosidade:**
 
-```bash
-# 1. Crie o .env a partir do modelo
-cp .env.example .env        # no PowerShell ou CMD: copy .env.example .env
+* `SOMBRA`
+* `MEIA_SOMBRA`
+* `SOL_PLENO`
 
-# 2. Instale as dependências na sua máquina
-#    (sem isso, o yarn migration dá "cross-env não é reconhecido")
-yarn
+**Observação sobre preços:** os valores são armazenados em centavos para evitar problemas de precisão em operações matemáticas com números decimais. Por exemplo, `8990` representa R$ 89,90.
 
-# 3. Suba a API e o banco
-docker compose up -d --build
+## 🔌 Endpoints
 
-# 4. Crie as tabelas no banco a partir das migrations
-yarn migration
-```
+Base URL: `http://localhost:3001`
 
-Para conferir, abra `http://localhost:3001` no navegador. Deve aparecer:
+| Método | Rota                           | Descrição                              | Sucesso |
+| ------ | ------------------------------ | -------------------------------------- | ------- |
+| POST   | `/plantas`                     | Cadastra uma planta.                   | 201     |
+| GET    | `/plantas`                     | Lista as plantas cadastradas.          | 200     |
+| GET    | `/plantas/:id`                 | Busca uma planta pelo ID.              | 200     |
+| PATCH  | `/plantas/:id`                 | Atualiza os campos enviados.           | 200     |
+| DELETE | `/plantas/:id`                 | Remove uma planta.                     | 204     |
+| POST   | `/plantas/:id/venda`           | Realiza uma venda e diminui o estoque. | 200     |
+| GET    | `/plantas/estoque/valor-total` | Calcula o valor total do estoque.      | 200     |
 
-```json
-{ "message": "API do treinamento de CRUD do CITi 🚀" }
-```
+### Exemplos de requisições
 
-### O `.env`
+#### Cadastrar planta
 
-O `.env` guarda as configurações do projeto e **não vai para o git**. Os valores do `.env.example` já funcionam na sua máquina, então não precisa trocar nada. As únicas variáveis que você pode querer mexer:
-
-| Variável | Quando mexer |
-|---|---|
-| `SERVER_PORT` | A porta 3001 já está em uso |
-| `DATABASE_PORT` | A porta 5432 já está em uso (por exemplo, por um Postgres instalado na máquina) |
-
-> **Por que o host do banco é `treinamento-crud-db` e não `localhost`?** A API roda *dentro* do Docker e enxerga o banco pelo nome do container. Os comandos que rodam na sua máquina (`yarn migration` e `yarn studio`) trocam o host para `localhost` sozinhos.
-
-### Comandos do dia a dia
-
-| Comando | O que faz |
-|---|---|
-| `docker compose up -d` | Sobe a API e o banco |
-| `docker compose logs -f server` | Mostra os logs da API (é aqui que os erros aparecem) |
-| `docker compose down` | Derruba os containers (os dados do banco continuam salvos) |
-| `yarn migration` | Cria uma migration a partir do `schema.prisma` e aplica no banco |
-| `yarn studio` | Abre o Prisma Studio para ver o banco no navegador |
-| `yarn typecheck` | Procura erros de tipo no TypeScript |
-
-A API recarrega sozinha quando você salva um arquivo em `src/`. Só precisa rodar `docker compose up -d --build` de novo se mudar o `package.json` ou o `Dockerfile`.
-
-> Prefere npm? Todos os comandos funcionam com `npm install` e `npm run <comando>`.
-
----
-
-## 📁 Estrutura
-
-```
-prisma/
-  schema.prisma          # Models (tabelas) do banco
-  migrations/            # Histórico de mudanças no banco, gerado pelo yarn migration
-src/
-  server.ts              # Cria o app Express e sobe o servidor
-  routes.ts              # Liga cada rota HTTP a uma função do controller
-  database/index.ts      # Conexão com o banco (Prisma Client)
-  controllers/           # Recebe a requisição, valida e responde
-  repositories/          # Única camada que conversa com o banco
-```
-
-O caminho de uma requisição:
-
-```
-Requisição → routes.ts → Controller → Repository → Banco
-                              ↓
-Resposta  ←───────────────────┘  (status HTTP + JSON)
-```
-
----
-
-## 🔌 CRUD de usuários
-
-| Campo | Tipo | Observação |
-|---|---|---|
-| `id` | número | Gerado pelo banco (1, 2, 3...) |
-| `nome` | texto | Obrigatório |
-| `conta` | `"CPF"` ou `"CNPJ"` | Obrigatório, em maiúsculas |
-| `documento` | texto | Obrigatório e único (não pode repetir) |
-| `createdAt` / `updatedAt` | data | Preenchidos pelo banco |
-
-| Método | Rota | O que faz | Sucesso | Erros |
-|---|---|---|---|---|
-| `POST` | `/users` | Cadastra um usuário | `201` | `400` se faltar campo |
-| `GET` | `/users` | Lista todos os usuários | `200` | |
-| `GET` | `/users/:id` | Busca um usuário pelo id | `200` | `404` se o id não existir |
-| `PATCH` | `/users/:id` | Edita só os campos enviados | `200` | `404` se o id não existir |
-| `DELETE` | `/users/:id` | Remove o usuário | `204` | `404` se o id não existir |
-
-Qualquer erro inesperado responde `500`.
-
-Exemplo de corpo para `POST /users`:
+`POST /plantas`
 
 ```json
 {
-  "nome": "Maria Silva",
-  "conta": "CPF",
-  "documento": "12345678900"
+  "nome": "Costela-de-Adão",
+  "especie": "Monstera deliciosa",
+  "preco": 8990,
+  "estoque": 10,
+  "luminosidade": "MEIA_SOMBRA",
+  "petFriendly": false,
+  "regaACadaDias": 5
 }
 ```
 
-Para o `PATCH`, envie só o que vai mudar: `{ "nome": "Maria S. Silva" }`.
+#### Filtrar plantas
 
-### Testando no Thunder Client
+`GET /plantas?luminosidade=MEIA_SOMBRA`
 
-1. Crie uma requisição, escolha o método (`POST`, `GET`...) e use a URL `http://localhost:3001/users`.
-2. Para `POST` e `PATCH`, vá em **Body → JSON** e cole o JSON **puro**, sem aspas em volta e sem `\"`.
-3. Para as rotas com `:id`, troque pelo número do usuário: `http://localhost:3001/users/1`.
+`GET /plantas?petFriendly=false`
 
----
+Também é possível utilizar os dois filtros simultaneamente:
 
-## 🆘 Problemas comuns
+`GET /plantas?luminosidade=MEIA_SOMBRA&petFriendly=false`
 
-| Erro | O que fazer |
-|---|---|
-| `'cross-env' não é reconhecido como um comando` | Faltou instalar as dependências na sua máquina: rode `yarn`. |
-| `Environment variable not found: DATABASE_URL` | Falta o `.env` na raiz do projeto: `cp .env.example .env`. |
-| `failed to connect to the docker API` | O Docker Desktop está fechado. Abra e espere ele ficar pronto. |
-| `port is already allocated` | Troque `SERVER_PORT` ou `DATABASE_PORT` no `.env` e suba de novo. |
-| `Can't reach database server` | Os containers não estão de pé: `docker compose up -d`. |
-| `Property 'user' does not exist on type 'PrismaClient'` | Rode `yarn migration` e, no VS Code, **Ctrl+Shift+P → Restart TS Server**. |
-| A API não responde em `localhost:3001` | Veja o erro em `docker compose logs -f server`. |
-| `500` ao criar ou editar depois de mudar o `schema.prisma` | O banco ainda está com as colunas antigas: rode `yarn migration`. |
-| `SyntaxError: ... is not valid JSON` ou `req.body` chega `undefined` | O corpo não foi como JSON. Cole o JSON puro em **Body → JSON**. |
+#### Buscar planta por ID
 
-> Dica: rode `yarn typecheck` antes de testar. A API não mostra erros de tipo ao rodar, mas o `typecheck` mostra todos de uma vez.
+`GET /plantas/1`
+
+#### Atualizar planta
+
+`PATCH /plantas/1`
+
+O PATCH permite atualizar somente os campos desejados, sem precisar enviar o objeto completo.
+
+```json
+{
+  "preco": 9990
+}
+```
+
+#### Realizar venda
+
+`POST /plantas/1/venda`
+
+```json
+{
+  "quantidade": 2
+}
+```
+
+A operação diminui a quantidade disponível no estoque de acordo com a quantidade vendida.
+
+#### Consultar valor total do estoque
+
+`GET /plantas/estoque/valor-total`
+
+Resposta esperada:
+
+```json
+{
+  "valorTotalEmCentavos": 154300,
+  "totalDeVasos": 37
+}
+```
+
+Os valores acima são ilustrativos.
+
+## ⚖️ Regras de negócio e validações
+
+A API deve respeitar as seguintes regras:
+
+1. Todos os campos são obrigatórios no cadastro.
+2. O preço deve ser maior que zero.
+3. O intervalo de rega deve ser de pelo menos um dia.
+4. O estoque não pode ser negativo, mas pode ser zero.
+5. A luminosidade deve corresponder a um dos valores definidos no enum.
+6. Dados inválidos no cadastro, na edição, nos filtros ou na venda devem retornar `400 Bad Request`, acompanhados de uma mensagem clara.
+7. A consulta ou alteração de um ID inexistente deve retornar `404 Not Found`, conforme a operação.
+8. Uma venda nunca pode deixar o estoque negativo. Caso não exista estoque suficiente, a operação deve retornar `400 Bad Request` sem alterar a quantidade disponível.
+
+### Códigos HTTP
+
+| Código | Significado           | Utilização                                |
+| ------ | --------------------- | ----------------------------------------- |
+| 200    | OK                    | Consulta, atualização e venda realizadas. |
+| 201    | Created               | Cadastro realizado.                       |
+| 204    | No Content            | Exclusão realizada sem corpo de resposta. |
+| 400    | Bad Request           | Dados ou parâmetros inválidos.            |
+| 404    | Not Found             | Registro não encontrado.                  |
+| 500    | Internal Server Error | Erro inesperado no servidor.              |
+
+## 🏗️ Arquitetura do projeto
+
+O projeto utiliza uma arquitetura organizada em camadas, separando as responsabilidades de cada componente.
+
+```text
+Requisição HTTP
+      |
+      v
+  routes.ts
+      |
+      v
+  Controller
+      |
+      v
+  Repository
+      |
+      v
+  Prisma ORM
+      |
+      v
+  PostgreSQL
+```
+
+### Responsabilidades
+
+* **Routes:** define os endpoints e direciona as requisições para os respectivos controllers.
+* **Controllers:** recebem as requisições, validam os dados, aplicam as regras de negócio e definem os status HTTP das respostas.
+* **Repositories:** concentram as operações de acesso ao banco de dados.
+* **Prisma:** realiza a comunicação entre a aplicação e o PostgreSQL.
+
+O Repository é a única camada da aplicação responsável por acessar o banco de dados.
+
+### Estrutura de diretórios
+
+```text
+prisma/
+  migrations/
+  schema.prisma
+
+src/
+  server.ts
+  routes.ts
+
+  database/
+    index.ts
+
+  controllers/
+    PlantaController.ts
+    UserController.ts
+
+  repositories/
+    PlantaRepository.ts
+    UserRepository.ts
+```
+
+## 🐳 Como executar o projeto
+
+### Pré-requisitos
+
+* Docker Desktop.
+* Node.js 20 ou superior.
+* Yarn.
+* Cliente HTTP, como Thunder Client, Insomnia ou Postman.
+
+### 1. Clonar o repositório
+
+```bash
+git clone <link-do-repositorio>
+cd desafio-Ellen-Fernanda
+```
+
+### 2. Criar o arquivo `.env`
+
+Na raiz do projeto, copie o arquivo de exemplo:
+
+```bash
+cp .env.example .env
+```
+
+No PowerShell ou CMD:
+
+```powershell
+copy .env.example .env
+```
+
+Configure as variáveis de ambiente conforme o arquivo `.env.example`.
+
+O arquivo `.env` contém informações de configuração e não deve ser enviado ao Git.
+
+### 3. Instalar as dependências
+
+```bash
+yarn
+```
+
+### 4. Subir os containers
+
+Com o Docker Desktop aberto:
+
+```bash
+docker compose up -d --build
+```
+
+Esse comando constrói a imagem da aplicação, caso necessário, e inicia os containers da API e do PostgreSQL.
+
+### 5. Aplicar as migrations
+
+Para aplicar as migrations existentes:
+
+```bash
+docker compose exec server npx prisma migrate deploy
+```
+
+No ambiente de desenvolvimento, quando for necessário criar uma nova migration a partir de alterações no `schema.prisma`, utilize o comando de migration disponibilizado pelo projeto:
+
+```bash
+yarn migration
+```
+
+### 6. Verificar a aplicação
+
+A API estará disponível em:
+
+`http://localhost:3001`
+
+Para conferir os logs:
+
+```bash
+docker compose logs -f server
+```
+
+## 🧰 Comandos úteis
+
+| Comando                                                | Descrição                                                 |
+| ------------------------------------------------------ | --------------------------------------------------------- |
+| `docker compose up -d`                                 | Inicia os containers.                                     |
+| `docker compose up -d --build`                         | Reconstrói as imagens e inicia os containers.             |
+| `docker compose down`                                  | Para e remove os containers, preservando os volumes.      |
+| `docker compose ps`                                    | Exibe o estado dos containers.                            |
+| `docker compose logs -f server`                        | Acompanha os logs da API.                                 |
+| `docker compose exec server npx prisma migrate deploy` | Aplica migrations pendentes.                              |
+| `yarn migration`                                       | Cria e aplica uma migration conforme o script do projeto. |
+| `yarn studio`                                          | Abre o Prisma Studio.                                     |
+| `yarn typecheck`                                       | Verifica erros de tipagem do TypeScript.                  |
+
+## 🧪 Testes
+
+Os endpoints podem ser testados utilizando Thunder Client, Insomnia, Postman ou cURL.
+
+É importante verificar tanto os casos de sucesso quanto os cenários de erro.
+
+Alguns cenários essenciais:
+
+* Cadastro válido e cadastro com campos ausentes.
+* Cadastro com preço inválido.
+* Cadastro com estoque negativo.
+* Cadastro com luminosidade inválida.
+* Consulta de ID existente e inexistente.
+* Atualização parcial e atualização com dados inválidos.
+* Filtros válidos e inválidos.
+* Venda com estoque suficiente e insuficiente.
+* Tentativa de venda com quantidade zero.
+* Cálculo do valor total do estoque.
+* Exclusão e consulta posterior do registro excluído.
+
+Antes da entrega, execute:
+
+```bash
+yarn typecheck
+```
+
+## 👩‍💻 Créditos
+
+**Projeto-base:** Ellen Fernanda — CRUD de usuários desenvolvido para o treinamento de Back-end do CITi.
+
+**Desafio:** Folhagem & Cia — implementação da API de gerenciamento de plantas como parte do Processo Seletivo do CITi.
